@@ -14,8 +14,8 @@ class Category(models.Model):
 
 
 class Music(models.Model):
-    title = models.SlugField(primary_key=True)
-    description = models.TextField(max_length=100)
+    title = models.CharField(max_length=50)
+    description = models.TextField(max_length=100, blank=True, null=True)
     author = models.CharField(max_length=50)
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
@@ -50,7 +50,23 @@ class Favorites(models.Model):
                               related_name='favorites')
     user = models.ForeignKey(get_user_model(),
                              on_delete=models.CASCADE,
-                             related_name='liked')
+                             related_name='favorites')
 
     class Meta:
         unique_together = ['music', 'user']
+
+
+class Likes(models.Model):
+    music = models.ForeignKey(Music,
+                              on_delete=models.CASCADE,
+                              related_name='liked'
+                              )
+    user = models.ForeignKey(get_user_model(),
+                             on_delete=models.CASCADE,
+                             related_name='liked'
+                             )
+
+    class Meta:
+        unique_together = ['music', 'user']
+
+
