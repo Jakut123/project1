@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 
@@ -70,3 +71,21 @@ class Likes(models.Model):
         unique_together = ['music', 'user']
 
 
+class Rating(models.Model):
+    music = models.ForeignKey(Music,
+                              on_delete=models.CASCADE,
+                              related_name='rating'
+                              )
+    user = models.ForeignKey(get_user_model(),
+                             on_delete=models.CASCADE,
+                             related_name='rating'
+                             )
+    rating = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5)
+        ]
+    )
+
+    class Meta:
+        unique_together = ['music', 'user']

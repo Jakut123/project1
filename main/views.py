@@ -2,15 +2,16 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import ListAPIView
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 
 from main.filter import MusicFilter
-from main.models import Category, Music, Comment, Favorites, Likes
+from main.models import Category, Music, Comment, Favorites, Likes, Rating
 from main.permissions import IsAdmin, IsAuthor
 from main.serializers import CategorySerializer, MusicListSerializer, CommentSerializer, FavoritesSerializer, \
-    MusicSerializer
+    MusicSerializer, RatingSerializer
 
 
 # class CategoryListView(ListAPIView):
@@ -107,11 +108,16 @@ class CommentView(ModelViewSet):
         return [AllowAny()]
 
 
-class FavoritesView(ModelViewSet):
+class FavoritesView(ListAPIView):
     queryset = Favorites.objects.all()
     serializer_class = FavoritesSerializer
-    permission_classes = [IsAuthor]
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        print('ffffff')
+        if not request.user.is_authenticated:
+            return Response('Вы не авторизованы')
+        return Response('hhhhhh')
 
     # def get_permissions(self):
     #     if self.action == 'create':
@@ -121,13 +127,12 @@ class FavoritesView(ModelViewSet):
     #     return [IsAuthor()]
 
 
-# class LikeView(ModelViewSet):
-    # queryset = Like.objects.all()
-    # serializer_class = LikeSerializer
-    #
-    # def get_permissions(self):
-    #     if self.action == 'create':
-    #         return [IsAuthenticated()]
-    #     if self.action == ['update', 'partial_update', 'destroy']:
-    #         return [IsAuthor()]
-    #     return [IsAuthor()]
+class RatingView(CreateModelMixin, DestroyModelMixin, GenericViewSet):
+    queryset = Rating.objects.all()
+    serializer_class = RatingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action == 'destroy':
+            return [IsAuthor()]
+        return [IsAuthenticated()]

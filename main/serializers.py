@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from main.models import Category, Music, Comment, Favorites
+from main.models import Category, Music, Comment, Favorites, Rating
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -37,7 +37,16 @@ class MusicSerializer(serializers.ModelSerializer):
             representation['is_liked'] = self.is_liked(instance)
             representation['in_favorites'] = self.in_favorites(instance)
         representation['likes_count'] = instance.liked.count()
-        return representation
+        representation['rating_count'] = instance.rating.all().count()
+        rating_data = RatingSerializer(instance.rating.all(), many=True).data
+        try:
+            total = 0
+            for ordered_dict in rating_data:
+                total += ordered_dict.get('rating')
+            representation['rating_average'] = total / instance.rating.all().count()
+            return representation
+        except ZeroDivisionError:
+            return representation
 
     def create(self, validated_data):
         validated_data['user'] = self.context.get('request').user
@@ -66,14 +75,32 @@ class FavoritesSerializer(serializers.ModelSerializer):
         model = Favorites
         fields = ['id', 'music']
 
+    # def validate(self, attrs):
+    #     print('ffffff')
+    #     if not self.context.get('request').user.IsAuthenticated:
+    #         raise serializers.ValidationError('Вы не авторизованы')
+    #     return attrs
 
-# class LikeSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Like
-#         fields = ['music']
-#
-#     def create(self, validated_data):
-#         user = self.context.get('request').user
-#         validated_data['user'] = user
-#         return super().create(validated_data)
+
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = ['music', 'rating', 'id']
+
+    def validate(self, attrs):
+        user = self.context.get('request').user
+        music = attrs.get('music')
+        try:
+            rating = Rating.objects.filter(user=user)[0]
+            ratings = Rating.objects.filter(music=music)
+            if rating in ratings:
+                raise serializers.ValidationError('Вы уже оставили отзыв')
+            return attrs
+        except IndexError:
+            return attrs
+
+    def create(self, validated_data):
+        user = self.context.get('request').user
+        validated_data['user'] = user
+        return super().create(validated_data)
 
